@@ -1,0 +1,15 @@
+replicaCount: 3
+
+image:
+  repository: my-greeting-app
+  tag: latest
+  pullPolicy: Never
+
+service:
+  type: NodePort
+  port: 80
+
+config:
+  greetingMessage: "Hello, Helm!"
+
+resources: {}

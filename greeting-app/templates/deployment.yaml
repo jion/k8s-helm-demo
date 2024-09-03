@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-greeting-app
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-greeting-app
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-greeting-app
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-greeting-app
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GREETING
+          value: {{ .Values.config.greetingMessage }}
