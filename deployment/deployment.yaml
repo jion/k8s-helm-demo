@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeting-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: greeting-app
+  template:
+    metadata:
+      labels:
+        app: greeting-app
+    spec:
+      containers:
+        - name: greeting-container
+          image: my-greeting-app:latest
+          imagePullPolicy: Never # Ensures Kubernetes uses the local image
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GREETING
+              valueFrom:
+                configMapKeyRef:
+                  name: greeting-config
+                  key: GREETING
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.5"
+              memory: "256Mi"
