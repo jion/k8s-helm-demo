@@ -1,231 +1,201 @@
-# **Kubernetes Demo: Deploying a Simple Greeting App with Minikube**
+# **Helm 3 Demo: Packaging and Deploying Your Kubernetes Application**
 
-## **1. Introduction**
-In this demo, we'll deploy a simple web server that returns a greeting message along with the Pod's name. We'll use a ConfigMap to manage the greeting message and a Service to expose the application. This will demonstrate how Deployments, Pods, ConfigMaps, and Services interact in Kubernetes.
+## **1. Introduction to Helm**
+Start by explaining what Helm is and why it's useful:
 
-### **Key Concepts Covered:**
-- **Pod:** The basic unit of deployment in Kubernetes, representing a running instance of your application.
-- **Deployment:** Manages the lifecycle of Pods, including scaling and updates.
-- **ConfigMap:** Allows you to decouple configuration artifacts from image content, making applications more portable.
-- **Service:** Provides a stable IP address and DNS name to access your Pods, and can load balance traffic across multiple Pods.
+### **Key Concepts:**
+- **Helm:** A package manager for Kubernetes, similar to apt for Ubuntu or npm for Node.js.
+- **Chart:** A Helm package that contains all the resource definitions necessary to run an application in Kubernetes.
+- **Release:** An instance of a Helm chart running in a Kubernetes cluster. Multiple releases of the same chart can exist in different namespaces or environments.
 
----
-
-## **2. Setting Up the Environment**
-
-### **Step 1: Start Minikube**
-First, ensure Minikube is running:
-
-```bash
-minikube start
-```
-
-Minikube creates a local Kubernetes cluster, perfect for development and testing.
-
-### **Step 2: Switch to Minikube’s Docker Daemon**
-We’ll build the Docker image directly in Minikube’s Docker environment:
-
-```bash
-eval $(minikube docker-env)
-```
-
-This allows us to avoid pushing the image to a remote registry.
+### **Why Use Helm?**
+- **Simplifies deployments:** Helm helps bundle Kubernetes resources, manage configurations, and deploy applications easily across environments.
+- **Parametrization:** Helm charts can be customized with values, making it easy to deploy the same application with different configurations.
 
 ---
 
-## **3. Create the Application**
+## **2. Create the Helm Chart**
 
-### **Step 1: Write the Simple Server**
-Create a simple Node.js server that returns a greeting message:
-
-**`server.js`**
-```javascript
-const http = require('http');
-const os = require('os');
-
-// Get environment variables
-const greeting = process.env.GREETING || 'Hello';
-const port = process.env.PORT || 3000;
-
-http.createServer((req, res) => {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end(`${greeting}, World! From pod: ${os.hostname()}\n`);
-}).listen(port);
-
-console.log(`Server running at http://0.0.0.0:${port}/`);
-```
-
-### **Step 2: Dockerize the Application**
-Create a Dockerfile to package the application:
-
-**`Dockerfile`**
-```Dockerfile
-FROM node:14
-
-WORKDIR /usr/src/app
-COPY server.js .
-
-EXPOSE 3000
-CMD ["node", "server.js"]
-```
-
-### **Step 3: Build the Docker Image**
-Build the image using Minikube’s Docker daemon:
+### **Step 1: Initialize a New Helm Chart**
+Navigate to your project directory and create a new Helm chart:
 
 ```bash
-docker build -t my-greeting-app .
+helm create greeting-app
 ```
 
----
+This creates a directory structure with templates and configuration files.
 
-## **4. Deploy the Application**
+### **Step 2: Understand the Directory Structure**
+Explain the key components of the chart:
+- **`Chart.yaml`:** Contains metadata about the chart (name, version, etc.).
+- **`values.yaml`:** The default values for the chart’s templates. These can be overridden by users.
+- **`templates/`:** Contains Kubernetes manifests that use Helm's templating language to inject values from `values.yaml`.
 
-### **Step 1: Create a ConfigMap**
-Create a ConfigMap to store the greeting message:
+### **Step 3: Modify the Chart**
+Start by replacing the default templates with your application's configuration files.
 
-**`configmap.yaml`**
+#### **Update `values.yaml`:**
+Add the following values:
+
+**`values.yaml`**
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: greeting-config
-data:
-  GREETING: "Hello Kubernetes"
+replicaCount: 3
+
+image:
+  repository: my-greeting-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+
+config:
+  greetingMessage: "Hello Helm"
+
+resources: {}
 ```
 
-Apply the ConfigMap:
+#### **Modify the Deployment Template:**
+Replace the default deployment template with the one you’ve been using.
 
-```bash
-kubectl apply -f configmap.yaml
-```
-
-### **Step 2: Create a Deployment**
-Define the Deployment that uses the ConfigMap:
-
-**`deployment.yaml`**
+**`templates/deployment.yaml`**
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: greeting-deployment
+  name: {{ .Release.Name }}-greeting-app
 spec:
-  replicas: 3
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: greeting-app
+      app: {{ .Release.Name }}-greeting-app
   template:
     metadata:
       labels:
-        app: greeting-app
+        app: {{ .Release.Name }}-greeting-app
     spec:
       containers:
-      - name: greeting-container
-        image: my-greeting-app
+      - name: {{ .Release.Name }}-greeting-app
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - containerPort: 3000
         env:
         - name: GREETING
-          valueFrom:
-            configMapKeyRef:
-              name: greeting-config
-              key: GREETING
+          value: {{ .Values.config.greetingMessage }}
 ```
 
-Apply the Deployment:
+#### **Modify the Service Template:**
+Update the service template:
 
-```bash
-kubectl apply -f deployment.yaml
-```
-
-### **Step 3: Create a Service**
-Expose the Deployment via a Service:
-
-**`service.yaml`**
+**`templates/service.yaml`**
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: greeting-service
+  name: {{ .Release.Name }}-greeting-service
 spec:
+  type: {{ .Values.service.type }}
   selector:
-    app: greeting-app
+    app: {{ .Release.Name }}-greeting-app
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 3000
-  type: NodePort
+  - protocol: TCP
+    port: {{ .Values.service.port }}
+    targetPort: 3000
 ```
 
-Apply the Service:
+### **Step 4: Test the Helm Chart Locally**
+To see how Helm renders the templates, use:
 
 ```bash
-kubectl apply -f service.yaml
+helm template my-release ./greeting-app
 ```
 
-### **Step 4: Access the Service**
-Get the Minikube IP and the NodePort assigned to the Service:
+This will output the Kubernetes manifests with all the values filled in, allowing you to review them before applying them to your cluster.
+
+---
+
+## **3. Deploy the Helm Chart**
+
+### **Step 1: Install the Chart**
+Deploy the application using Helm:
+
+```bash
+helm install my-release ./greeting-app
+```
+
+Explain that this command installs the chart as a release named `my-release`. Helm creates all the necessary Kubernetes resources.
+
+### **Step 2: Access the Application**
+Just like before, get the Minikube IP and the NodePort:
 
 ```bash
 minikube ip
-kubectl get service greeting-service
+kubectl get service my-release-greeting-service
 ```
 
-Visit `http://<minikube-ip>:<NodePort>` in your browser to see the greeting message from one of the Pods.
+Access the service at `http://<minikube-ip>:<NodePort>`.
+
+### **Step 3: Update the Helm Release**
+Show how easy it is to update the release by changing a value in `values.yaml` (e.g., change the `greetingMessage`), and then upgrade the release:
+
+```yaml
+config:
+  greetingMessage: "Hello from Helm!"
+```
+
+Upgrade the release:
+
+```bash
+helm upgrade my-release ./greeting-app
+```
+
+Helm will update the existing release with the new configuration. Refresh the browser to see the changes.
+
+### **Step 4: Rollback the Helm Release**
+Demonstrate how to rollback to a previous version if needed:
+
+```bash
+helm rollback my-release 1
+```
+
+Explain that Helm keeps track of every revision, making it easy to revert to an earlier state.
 
 ---
 
-## **5. Demonstrate Kubernetes Concepts**
+## **4. Parametrizing Values**
 
-### **Viewing the Pods**
-Show the list of Pods created by the Deployment:
-
-```bash
-kubectl get pods
-```
-
-Explain how the Deployment manages the Pods, ensuring that the specified number of replicas is always running.
-
-### **Updating the ConfigMap**
-Update the greeting message in the ConfigMap:
+### **Step 1: Override Values at Install Time**
+Show how to override values at the time of installation without modifying `values.yaml`:
 
 ```bash
-kubectl edit configmap greeting-config
+helm install my-release ./greeting-app --set replicaCount=5 --set config.greetingMessage="Hello Custom Helm"
 ```
 
-Change the `GREETING` value and save. Then, use the following command to restart the Deployment and apply the new ConfigMap:
+This command deploys the chart with 5 replicas and a custom greeting message, overriding the defaults in `values.yaml`.
+
+### **Step 2: Use Environment-Specific Values**
+You can create additional YAML files for different environments (e.g., `values-prod.yaml`, `values-dev.yaml`) and apply them during installation:
 
 ```bash
-kubectl rollout restart deployment greeting-deployment
+helm install my-release ./greeting-app -f values-prod.yaml
 ```
 
-After the Pods restart, refresh the browser to see the updated message.
-
-### **Scaling the Deployment**
-Scale the Deployment up or down:
-
-```bash
-kubectl scale deployment greeting-deployment --replicas=5
-```
-
-Explain how Kubernetes dynamically adjusts the number of Pods based on the desired state defined in the Deployment.
-
-### **Rolling Back (if needed)**
-If something goes wrong with the Deployment, you can delete it and reapply:
-
-```bash
-kubectl delete deployment greeting-deployment
-kubectl apply -f deployment.yaml
-```
+This demonstrates how Helm allows you to maintain different configurations for various environments with ease.
 
 ---
 
-## **6. Clean Up**
+## **5. Clean Up**
 
-Once you're done with the demo, stop Minikube and clean up the resources:
+After the demo, you can clean up the Helm release and stop Minikube:
 
 ```bash
-kubectl delete service greeting-service
-kubectl delete deployment greeting-deployment
-kubectl delete configmap greeting-config
+helm uninstall my-release
 minikube stop
 ```
+
+---
+
+### **Conclusion**
+This Helm demo illustrates the power of Helm in managing Kubernetes applications, from simplifying deployments to managing configurations across environments. By using Helm, your team can standardize and streamline the deployment process, making it easier to manage complex applications in Kubernetes.
