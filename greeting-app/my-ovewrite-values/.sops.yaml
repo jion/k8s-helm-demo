@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: '.*\.(yaml|yml)$'
+    encrypted_regex: "^(secrets|data|stringData)$"
+    pgp: "30E96647C2588D5E"

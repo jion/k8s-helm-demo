@@ -21,11 +21,16 @@ spec:
         ports:
         - containerPort: 3000
         env:
-          - name: GREETING
-            valueFrom:
-              configMapKeyRef:
-                name: {{ .Release.Name }}-greeting-config
-                key: GREETING
+        - name: GREETING
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-greeting-config
+              key: GREETING
+        - name: SECRET_RECIPE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-recipe-secrets
+              key: secret-recipe
         resources:
           limits:
             cpu: {{ .Values.resources.limits.cpu }}

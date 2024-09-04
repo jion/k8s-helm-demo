@@ -1,3 +1,7 @@
+```
+helm secrets upgrade my-release ./greeting-app -f ./greeting-app/my-ovewrite-values/secrets.yaml -f ./greeting-app/my-ovewrite-values/values.yaml
+```
+
 # **Helm 3 Demo: Packaging and Deploying Your Kubernetes Application**
 
 ## **1. Introduction to Helm**

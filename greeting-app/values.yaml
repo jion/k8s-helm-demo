@@ -2,7 +2,7 @@ replicaCount: 3
 
 image:
   repository: my-greeting-app
-  tag: latest
+  tag: secret
   pullPolicy: Never
 
 service:

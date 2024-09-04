@@ -8,7 +8,17 @@ const port = process.env.PORT || 3000;
 http
   .createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end(`${greeting} -- From pod: ${os.hostname()}\n`);
+
+    let response = `${greeting} -- From pod: ${os.hostname()}\n\n`;
+
+    // If secret Recipe, display it
+    if (process.env.SECRET_RECIPE) {
+      response += `The secret recipe is: ${process.env.SECRET_RECIPE}\n`;
+    } else {
+      response += "No secret recipe found\n";
+    }
+
+    res.end(response);
   })
   .listen(port);
 
