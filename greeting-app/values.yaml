@@ -8,8 +8,15 @@ image:
 service:
   type: NodePort
   port: 80
+  targetPort: 3000
+
+resources:
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+  requests:
+    cpu: "0.5"
+    memory: "256Mi"
 
 config:
-  greetingMessage: "Hello, OG team!"
-
-resources: {}
+  greetingMessage: "Hello K8s!"

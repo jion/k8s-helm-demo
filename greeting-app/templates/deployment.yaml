@@ -21,8 +21,15 @@ spec:
         ports:
         - containerPort: 3000
         env:
-        - name: GREETING
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-greeting-config
-              key: GREETING
+          - name: GREETING
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Release.Name }}-greeting-config
+                key: GREETING
+        resources:
+          limits:
+            cpu: {{ .Values.resources.limits.cpu }}
+            memory: {{ .Values.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.resources.requests.cpu }}
+            memory: {{ .Values.resources.requests.memory }}
