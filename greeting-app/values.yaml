@@ -10,6 +10,6 @@ service:
   port: 80
 
 config:
-  greetingMessage: "Hello, Helm!"
+  greetingMessage: "Hello, OG team!"
 
 resources: {}
