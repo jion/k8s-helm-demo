@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-greeting-app
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -20,4 +22,7 @@ spec:
         - containerPort: 3000
         env:
         - name: GREETING
-          value: {{ .Values.config.greetingMessage }}
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-greeting-config
+              key: GREETING
