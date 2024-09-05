@@ -1,1 +1,2 @@
-No need for notes
+This information will be shown in command line after installing this package.
+You can also use templates here: e.g., "{{ .Release.Name }}" is the release name
