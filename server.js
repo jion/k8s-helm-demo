@@ -2,7 +2,7 @@ const http = require("http");
 const os = require("os");
 
 // Get environment variables
-const greeting = process.env.GREETING || "Hello";
+const greeting = process.env.GREETING;
 const port = process.env.PORT || 3000;
 
 http
