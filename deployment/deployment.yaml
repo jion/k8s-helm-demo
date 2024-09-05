@@ -23,7 +23,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: greeting-config
-                  key: GREETING
+                  key: greeting_message
           resources:
             limits:
               cpu: "1"

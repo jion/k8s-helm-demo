@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: greeting-config
 data:
-  GREETING: "Hello K8s!"
+  greeting_message: "Hello K8s!"
